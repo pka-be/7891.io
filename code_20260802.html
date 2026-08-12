@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh‑CN">
+<head>
+<meta charset="UTF‑8">
+<meta name="viewport" content="width=device‑width, initial‑scale=1.0">
+<title>同步现实｜多国时钟</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
+body{
+    min-height:100vh;
+    background:#121522;
+    color:#ffffff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+.wrap{
+    width:100%;
+    max-width:540px;
+}
+h1{
+    text-align:center;
+    margin-bottom:30px;
+    font-size:24px;
+}
+.select-box{
+    margin-bottom:26px;
+}
+#areaSelect{
+    width:100%;
+    padding:14px 16px;
+    background:#1f2438;
+    color:#fff;
+    border:1px solid #383f5c;
+    border-radius:12px;
+    font-size:16px;
+}
+.card{
+    background:#1f2438;
+    border-radius:18px;
+    padding:42px 24px;
+    text-align:center;
+}
+.label-area{
+    font-size:20px;
+    color:#b1b9d8;
+    margin-bottom:18px;
+}
+.time-show{
+    font-size:58px;
+    font-weight:bold;
+    letter-spacing:3px;
+    margin-bottom:20px;
+}
+#calibrateBtn{
+    padding:10px 28px;
+    background:#383f5c;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    cursor:pointer;
+    transition:background 0.2s;
+}
+#calibrateBtn:hover{
+    background:#495177;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>多国同步时钟</h1>
+    <div class="select-box">
+        <select id="areaSelect"></select>
+    </div>
+    <div class="card">
+        <div class="label-area" id="areaName">中国 UTC+8</div>
+        <div class="time-show" id="clock">00:00:00</div>
+        <button id="calibrateBtn">一键校准时间</button>
+    </div>
+</div>
+<script>
+// 共50个国家/城市时区
+const areaList = [
+    {name:"中国 UTC+8", utcOffset: 8},
+    {name:"日本 UTC+9", utcOffset: 9},
+    {name:"韩国 UTC+9", utcOffset: 9},
+    {name:"朝鲜 UTC+9", utcOffset: 9},
+    {name:"越南 UTC+7", utcOffset: 7},
+    {name:"泰国 UTC+7", utcOffset: 7},
+    {name:"老挝 UTC+7", utcOffset: 7},
+    {name:"柬埔寨 UTC+7", utcOffset: 7},
+    {name:"缅甸 UTC+6.5", utcOffset: 6.5},
+    {name:"马来西亚 UTC+8", utcOffset: 8},
+    {name:"新加坡 UTC+8", utcOffset: 8},
+    {name:"印度尼西亚 UTC+7", utcOffset: 7},
+    {name:"菲律宾 UTC+8", utcOffset: 8},
+    {name:"文莱 UTC+8", utcOffset: 8},
+    {name:"印度 UTC+5.5", utcOffset: 5.5},
+    {name:"巴基斯坦 UTC+5", utcOffset: 5},
+    {name:"孟加拉国 UTC+6", utcOffset: 6},
+    {name:"尼泊尔 UTC+5.75", utcOffset: 5.75},
+    {name:"斯里兰卡 UTC+5.5", utcOffset: 5.5},
+    {name:"阿联酋 UTC+4", utcOffset: 4},
+    {name:"沙特阿拉伯 UTC+3", utcOffset: 3},
+    {name:"卡塔尔 UTC+3", utcOffset: 3},
+    {name:"土耳其 UTC+3", utcOffset: 3},
+    {name:"伊朗 UTC+3.5", utcOffset: 3.5},
+    {name:"以色列 UTC+2", utcOffset: 2},
+    {name:"埃及 UTC+2", utcOffset: 2},
+    {name:"俄罗斯莫斯科 UTC+3", utcOffset: 3},
+    {name:"英国伦敦 UTC+0", utcOffset: 0},
+    {name:"爱尔兰 UTC+0", utcOffset: 0},
+    {name:"葡萄牙 UTC+0", utcOffset: 0},
+    {name:"法国巴黎 UTC+1", utcOffset: 1},
+    {name:"德国柏林 UTC+1", utcOffset: 1},
+    {name:"意大利罗马 UTC+1", utcOffset: 1},
+    {name:"西班牙马德里 UTC+1", utcOffset: 1},
+    {name:"荷兰阿姆斯特丹 UTC+1", utcOffset: 1},
+    {name:"瑞士苏黎世 UTC+1", utcOffset: 1},
+    {name:"瑞典斯德哥尔摩 UTC+1", utcOffset: 1},
+    {name:"挪威奥斯陆 UTC+1", utcOffset: 1},
+    {name:"波兰华沙 UTC+1", utcOffset: 1},
+    {name:"南非约翰内斯堡 UTC+2", utcOffset: 2},
+    {name:"澳大利亚悉尼 UTC+10", utcOffset: 10},
+    {name:"新西兰奥克兰 UTC+12", utcOffset: 12},
+    {name:"加拿大温哥华 UTC-8", utcOffset: -8},
+    {name:"加拿大多伦多 UTC-5", utcOffset: -5},
+    {name:"美国洛杉矶 UTC-8", utcOffset: -8},
+    {name:"美国纽约 UTC-5", utcOffset: -5},
+    {name:"美国芝加哥 UTC-6", utcOffset: -6},
+    {name:"巴西圣保罗 UTC-3", utcOffset: -3},
+    {name:"阿根廷布宜诺斯艾利斯 UTC-3", utcOffset: -3},
+    {name:"墨西哥墨西哥城 UTC-6", utcOffset: -6}
+];
+const selDom = document.getElementById("areaSelect");
+const areaDom = document.getElementById("areaName");
+const timeDom = document.getElementById("clock");
+const calibrateBtn = document.getElementById("calibrateBtn");
+
+areaList.forEach((item, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.innerText = item.name;
+    selDom.appendChild(opt);
+});
+let currentIdx = 0;
+selDom.value = currentIdx;
+
+function pad(n){
+    return String(n).padStart(2, '0');
+}
+
+function update(){
+    const nowTs = Date.now();
+    const offsetMs = areaList[currentIdx].utcOffset * 3600 * 1000;
+    const targetTs = nowTs + offsetMs;
+    const t = new Date(targetTs);
+
+    const h = pad(t.getUTCHours());
+    const m = pad(t.getUTCMinutes());
+    const s = pad(t.getUTCSeconds());
+
+    areaDom.innerText = areaList[currentIdx].name;
+    timeDom.innerText = `${h}:${m}:${s}`;
+}
+
+selDom.addEventListener("change", e=>{
+    currentIdx = Number(e.target.value);
+    update();
+});
+
+calibrateBtn.addEventListener("click", ()=>{
+    update();
+    calibrateBtn.innerText = "已校准！";
+    setTimeout(()=>{
+        calibrateBtn.innerText = "一键校准时间";
+    }, 800);
+});
+
+update();
+setInterval(update, 1000);
+</script>
+</body>
+</html>
